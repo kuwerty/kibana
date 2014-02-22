@@ -117,6 +117,16 @@ function (Interval, _) {
       this      // context
     );
 
+    // If the data has min/max value it'll be an array: [t,[val,min,max]]. Let's
+    // flatten that to [t,val,min,max] to make client code look sane.
+    pairs = _.map(pairs, function(p) {
+      if(typeof(p[1]) === 'number') {
+        return p;
+      } else {
+        return [p[0], p[1][0], p[1][1], p[1][2]];
+      }
+    });
+
     // if the first or last pair is inside either the start or end time,
     // add those times to the series with null values so the graph will stretch to contain them.
     // Removing, flot 0.8.1's max/min params satisfy this

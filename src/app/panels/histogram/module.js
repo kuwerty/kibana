@@ -21,6 +21,7 @@ define([
   './timeSeries',
   'numeral',
   'jquery.flot',
+  'jquery.flot.errorbars',
   'jquery.flot.events',
   'jquery.flot.selection',
   'jquery.flot.time',
@@ -414,7 +415,7 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
                 interval: _interval,
                 start_date: _range && _range.from,
                 end_date: _range && _range.to,
-                fill_style: $scope.panel.derivative ? 'null' : 'minimal'
+                fill_style: $scope.panel.derivative ? 'null' : ($scope.panel.lines ? 'minimal' : 'no')
               };
               time_series = new timeSeries.ZeroFilled(tsOpts);
               hits = 0;
@@ -457,6 +458,15 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
               } else if ($scope.panel.mode === 'total'){
                 value = (time_series._data[entry.time] || 0) + entry.total;
               }
+
+              if( $scope.panel.errorbars ) {
+
+                var min = entry.min;
+                var max = entry.max;
+
+                value = [ value, min, max ];
+              }
+
               time_series.addValue(entry.time, value);
             });
 
@@ -586,14 +596,16 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
 
         var scale = function(series,factor) {
           return _.map(series,function(p) {
-            return [p[0],p[1]*factor];
+            if(p[1].length === 2) {
+              return [p[0],p[1]*factor];
+            } else {
+              return [p[0],p[1]*factor,p[2]*factor,p[3]*factor];
+            }
           });
         };
 
         var scaleSeconds = function(series,interval) {
-          return _.map(series,function(p) {
-            return [p[0],p[1]/kbn.interval_to_seconds(interval)];
-          });
+          return scale(series, 1.0/kbn.interval_to_seconds(interval));
         };
 
         var derivative = function(series) {
@@ -745,11 +757,112 @@ function (angular, app, $, _, kbn, moment, timeSeries, numeral) {
               data[i].data = _d;
             }
 
-            plot = $.plot(elem, data, options);
+            if(scope.panel.errorbars && !scope.panel.derivative) {
+              var plot_data = [];
+              
+              var running_max = 0;
+
+              // plot errors half way through bars (if enabled)
+              var hw = options.series.bars.show ? options.series.bars.barWidth*0.5 : 0.0;
+
+              for (i = 0; i < data.length; i++) {
+                var points = [];
+                var errors = [];
+
+                // Split the data into one array for the regular plot, using
+                // all available points, and another array that will be used for
+                // the error bars. Error bars don't include zero filled points or
+                // really tiny errors.
+                for (var j = 0; j < data[i].data.length; j++) {
+                  var t = data[i].data[j][0];
+                  var x = data[i].data[j][1];
+
+                  points.push([t, x]);
+
+                  if (data[i].data[j].length === 4) {
+                    var limit = x * 0.1;  // smallest allowed errorbar
+
+                    var min = data[i].data[j][2];
+                    var max = data[i].data[j][3];
+                    
+                    running_max = Math.max(running_max, max);
+
+                    // absolute min/max -> delta
+                    min = x - min;
+                    max = max - x;
+
+                    if((Math.abs(min) + Math.abs(max)) > limit) {
+                      errors.push([t+hw, x, min, max]);
+                    }
+                  }
+                }
+
+                // add a series that is the regular plot: lines, bars or whatever
+                plot_data.push({
+                  data   : points,
+                  info   : data[i].info,
+                  color  : data[i].color,
+                  label  : data[i].label,
+                });
+
+                // add a series for errorbars, disable other plot types.
+                plot_data.push({
+                  data      : errors,
+                  stack     : false,
+                  clickable : false,
+                  hoverable : false,
+                  info      : data[i].info,
+                  points    : {
+                    show: true,
+                    radius: 1.2,
+                    errorbars: "y",
+                    yerr: {
+                      show: true,
+                      upperCap: "-",
+                      lowerCap: "-",
+                      asymmetric: true,
+                      radius:2
+                    }
+                  },
+                  lines     : { show: false },
+                  bars      : { show: false },
+                  color     : darker(data[i].color, 0.6)
+                });
+              }
+
+              // Bug in flot(?): grid does not size to max value in error bars, let's 
+              // set it ourselves if unset.
+              if(options.yaxis.max == null) {
+                options.yaxis.max = running_max * 1.2;
+              }
+
+              plot = $.plot(elem, plot_data, options);
+
+            } else {
+
+              plot = $.plot(elem, data, options);
+            }
 
           } catch(e) {
             // Nothing to do here
           }
+        }
+
+        // given a '#abcdef' color return it multiplied by some factor.
+        function darker(color, factor) {
+          color = [
+            parseInt(color.substr(1,2),16),
+            parseInt(color.substr(3,2),16),
+            parseInt(color.substr(5,2),16),
+          ];
+
+          color = [ color[0]*factor, color[1]*factor, color[2]*factor ];
+          
+          color = [ Math.floor(color[0]), Math.floor(color[1]), Math.floor(color[2])];
+
+          color = "rgba("+color[0]+","+color[1]+","+color[2]+",255)";
+
+          return color;
         }
 
         function time_format(interval) {
