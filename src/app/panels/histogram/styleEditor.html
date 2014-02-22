@@ -11,6 +11,10 @@
       <label class="small">Points</label><input type="checkbox" ng-model="panel.points" ng-checked="panel.points">
     </div>
     <div class="editor-option">
+      <label class="small">Error Bars<tip>Disabled when derivatives are plotted.</tip></label>
+      <input type="checkbox" ng-model="panel.errorbars" ng-checked="panel.errorbars" ng-disabled="panel.derivative">
+    </div>
+    <div class="editor-option">
       <label class="small">Selectable</label><input type="checkbox" ng-model="panel.interactive" ng-checked="panel.interactive">
     </div>
     <div class="editor-option">

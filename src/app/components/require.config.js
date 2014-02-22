@@ -35,6 +35,7 @@ require.config({
 
     'jquery.flot':            '../vendor/jquery/jquery.flot',
     'jquery.flot.pie':        '../vendor/jquery/jquery.flot.pie',
+    'jquery.flot.errorbars':  '../vendor/jquery/jquery.flot.errorbars',
     'jquery.flot.events':     '../vendor/jquery/jquery.flot.events',
     'jquery.flot.selection':  '../vendor/jquery/jquery.flot.selection',
     'jquery.flot.stack':      '../vendor/jquery/jquery.flot.stack',
@@ -71,6 +72,7 @@ require.config({
     'jquery.flot':          ['jquery'],
     'jquery.flot.byte':     ['jquery', 'jquery.flot'],
     'jquery.flot.pie':      ['jquery', 'jquery.flot'],
+    'jquery.flot.errorbars':['jquery', 'jquery.flot'],
     'jquery.flot.events':   ['jquery', 'jquery.flot'],
     'jquery.flot.selection':['jquery', 'jquery.flot'],
     'jquery.flot.stack':    ['jquery', 'jquery.flot'],
