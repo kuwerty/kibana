@@ -1,3 +1,10 @@
+Fork of Kibana with a few experimental additions/fixes:
+
+- add error bars on histograms
+- add zoom-out to timepicker at top of page
+- fixes missing histogram when you zoom too far in
+ 
+
 # Kibana
 
 __NOTE__: You have reached the Kibana 3 repository.

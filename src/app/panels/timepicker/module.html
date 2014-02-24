@@ -42,8 +42,13 @@
         </ul>
 
       </li>
+
       <li>
-        <a ng-click="dashboard.refresh()"><i class="icon-refresh"></i></a>
+        <a ng-click="zoom(2.0)" bs-tooltip="'Zoom Out'" data-placement="bottom"><i class='icon-zoom-out'></i></a>
+      </li>
+
+      <li>
+        <a ng-click="dashboard.refresh()" bs-tooltip="'Refresh'" data-placement="bottom"><i class="icon-refresh"></i></a>
       </li>
     </ul>
 
